@@ -84,6 +84,20 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .toggle{display:flex;justify-content:space-between;align-items:center;font-size:14px;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .toggle input{width:22px;height:22px;accent-color:var(--accent)}
 #review video{width:100%;max-height:52vh;border-radius:12px;background:#000}
+.pl.cta{color:var(--accent)}
+.pl.cta::before{content:"CTA";display:block;font-family:var(--mono);font-size:.36em;letter-spacing:.14em;margin-bottom:.15em}
+#aiPill{position:absolute;left:10px;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:3;max-width:60%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#aiPill.ready{background:var(--accent);color:#1B1300;border-color:var(--accent)}
+.sub{margin:6px 0 0;font-size:14px;color:var(--dim);font-weight:600;letter-spacing:.02em}
+.idea{display:flex;flex-direction:column;gap:4px;border:1px solid var(--line);border-radius:12px;padding:12px;text-align:left;width:100%}
+.idea .h{font-weight:700;font-size:15px;line-height:1.35}
+.idea .m{font-size:12px;color:var(--dim)}
+.idea .m b{color:var(--accent);font-weight:600}
+.field{width:100%;font:inherit;font-size:15px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+select{font:inherit;font-size:15px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+details.paste summary{cursor:pointer;color:var(--dim);font-size:13.5px;padding:6px 0}
+details.paste[open]{display:flex;flex-direction:column;gap:8px}
+.keybox{border:1px solid var(--accent);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -97,6 +111,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <div id="pEmpty">Tap <b>&nbsp;Scripts&nbsp;</b> to paste a script, or open one from Content Machine.</div>
   </div>
 
+  <button class="chip" id="aiPill" hidden></button>
   <div id="topbar">
     <button class="chip" id="speedChip" aria-label="Teleprompter settings">150 wpm</button>
   </div>
@@ -106,7 +121,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 
   <div id="controls">
     <div class="side">
-      <button class="ctl" id="scriptsBtn"><span class="i">☰</span>Scripts</button>
+      <button class="ctl" id="scriptsBtn"><span class="i">✦</span>Ideas</button>
       <button class="ctl" id="rehearseBtn"><span class="i">▶</span><span id="rehearseLbl">Rehearse</span></button>
     </div>
     <button id="rec" aria-label="Record"><i></i></button>
@@ -118,13 +133,31 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 
   <div class="scrim" id="scrim" hidden></div>
 
-  <section class="sheet" id="scriptsSheet" hidden aria-label="Scripts">
+  <section class="sheet" id="scriptsSheet" hidden aria-label="Ideas">
     <div class="grab"></div>
-    <div class="row"><h2>Scripts</h2><button class="x" data-close>Close</button></div>
+    <div class="row"><h2>Today's ideas</h2><button class="x" data-close>Close</button></div>
+    <div id="noKey" class="keybox" hidden>
+      <p class="note">Add your Claude API key once and this app writes fresh Tenglish scripts for you every day, with real numbers and a CTA. Nothing to paste.</p>
+      <div class="btns"><button class="btn primary" id="goKey">Add Claude API key</button></div>
+    </div>
+    <div id="aiBox" hidden>
+      <div class="list" id="ideaList"></div>
+      <p class="note" id="aiStatus" aria-live="polite"></p>
+      <div class="btns"><button class="btn" id="newIdeasBtn">Write 3 new ideas</button></div>
+      <h3 class="sub">Write from my idea</h3>
+      <textarea id="ideaBox" placeholder="e.g. Warangal lo oka homemaker saree shop ki WhatsApp catalogue chesi first client techukundi."></textarea>
+      <div class="btns">
+        <select id="lenSel" aria-label="Length"><option value="15">15 s</option><option value="30" selected>30 s</option><option value="45">45 s</option></select>
+        <button class="btn primary" id="writeBtn">Write script</button>
+      </div>
+    </div>
+    <h3 class="sub">My scripts</h3>
     <div class="list" id="scriptList"></div>
-    <label for="pasteBox" class="note">Paste a script. The "Copy script" text from Content Machine works as-is; otherwise put one spoken line per line.</label>
-    <textarea id="pasteBox" placeholder="Diwali inka 3 weeks lo undi.&#10;Mee area lo prathi shop ki oka video kavali.&#10;…"></textarea>
-    <div class="btns"><button class="btn primary" id="saveScript">Add script</button></div>
+    <details class="paste">
+      <summary>Paste a script instead</summary>
+      <textarea id="pasteBox" aria-label="Script to paste" placeholder="Diwali inka 3 weeks lo undi.&#10;Mee area lo prathi shop ki oka video kavali.&#10;…"></textarea>
+      <div class="btns"><button class="btn" id="saveScript">Add script</button></div>
+    </details>
   </section>
 
   <section class="sheet" id="settingsSheet" hidden aria-label="Prompter settings">
@@ -136,6 +169,11 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <label class="toggle">Show shot cues <input type="checkbox" id="cues"></label>
     <label class="toggle">3-second countdown <input type="checkbox" id="countdown"></label>
     <p class="note">Drag the script up or down with your finger to set where to start. Tap the script to pause while rehearsing.</p>
+    <h3 class="sub" id="keyH">Claude API key</h3>
+    <p class="note">Lets this app write your scripts. Create a key at <b>console.anthropic.com</b> → API Keys (pay per use, billed separately from a Claude subscription; roughly a few rupees per script). The key is stored only on this phone.</p>
+    <input type="password" id="keyInput" class="field" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="sk-ant-…" aria-labelledby="keyH">
+    <div class="btns"><button class="btn primary" id="saveKey">Save key</button><button class="btn" id="clearKey">Remove key</button></div>
+    <p class="note" id="keyStatus" aria-live="polite"></p>
   </section>
 
   <section class="sheet" id="review" hidden aria-label="Review take">
@@ -187,9 +225,9 @@ function parseScript(raw){
   if(!title&&beats[0])title=beats[0].say.replace(/\(cut\)/gi,"").slice(0,80);
   return {title,beats};
 }
-function addScript(title,beats,source){
+function addScript(title,beats,source,cta){
   const dup=scripts.find(s=>s.title===title&&s.beats.length===beats.length&&s.beats[0]?.say===beats[0]?.say);
-  if(dup){curId=dup.id}else{const s={id:uid(),title,beats,source,createdAt:Date.now()};scripts.unshift(s);scripts=scripts.slice(0,60);curId=s.id}
+  if(dup){curId=dup.id;if(cta)dup.cta=cta}else{const s={id:uid(),title,beats,source,cta:cta||"",createdAt:Date.now()};scripts.unshift(s);scripts=scripts.slice(0,60);curId=s.id}
   store.set("scripts",scripts);store.set("cur",curId);
 }
 function current(){return scripts.find(s=>s.id===curId)||null}
@@ -201,7 +239,7 @@ function importFromHash(){
     const json=decodeURIComponent(Array.from(atob(b),c=>"%"+c.charCodeAt(0).toString(16).padStart(2,"0")).join(""));
     const d=JSON.parse(json);
     const beats=(d.l||[]).map(x=>({say:String(x[0]||""),cue:String(x[1]||"")})).filter(b=>b.say);
-    if(beats.length){addScript(String(d.t||beats[0].say).slice(0,120),beats,"content-machine");}
+    if(beats.length){addScript(String(d.t||beats[0].say).slice(0,120),beats,"content-machine",String(d.c||""));}
   }catch(e){showMsg("That script link looks damaged. Copy the script from Content Machine and paste it under Scripts instead.")}
   history.replaceState(null,"",location.pathname+location.search);
   return true;
@@ -211,11 +249,12 @@ function importFromHash(){
 function renderPrompter(){
   const s=current(), t=$("pText");
   $("pEmpty").hidden=!!s;
-  if(!s){t.innerHTML="";P.words=0;return}
+  if(!s){t.innerHTML="";P.words=0;$("pEmpty").innerHTML=emptyText();return}
   t.style.fontSize=S.size+"px";
   t.innerHTML=s.beats.map(b=>{
     let say=esc(b.say).replace(/\(cut\)/gi,'<span class="cut">CUT</span>').replace(/\{\{([^}]+)\}\}/g,'<span class="ph">[$1]</span>');
-    return `<p class="pl">${say}${S.cues&&b.cue?`<span class="cue">${esc(b.cue)}</span>`:""}</p>`;
+    const isCta=/comment/i.test(b.say)&&(!s.cta||b.say.toUpperCase().includes(String(s.cta).toUpperCase()));
+    return `<p class="pl${isCta?" cta":""}">${say}${S.cues&&b.cue?`<span class="cue">${esc(b.cue)}</span>`:""}</p>`;
   }).join("")+'<p class="pl" style="color:var(--dim);font-size:.6em">— end —</p>';
   const h=$("prompter").clientHeight, top=Math.round(h*0.32);
   t.style.paddingTop=top+"px";t.style.paddingBottom=Math.round(h*0.75)+"px";
@@ -320,7 +359,7 @@ $("saveTake").onclick=async()=>{
 $("discardTake").onclick=()=>{closeSheets();if(take?.url)URL.revokeObjectURL(take.url);take=null;$("takeVideo").removeAttribute("src");P.y=0;applyY()};
 
 /* ---------- sheets ---------- */
-function openSheet(id){closeSheets(true);$(id).hidden=false;$("scrim").hidden=false;if(id==="scriptsSheet")renderList();if(id==="settingsSheet")syncSettings()}
+function openSheet(id){closeSheets(true);$(id).hidden=false;$("scrim").hidden=false;if(id==="scriptsSheet"){renderIdeas();renderList();$("aiPill").classList.remove("ready");if(!AI.running)$("aiPill").hidden=true}if(id==="settingsSheet")syncSettings()}
 function closeSheets(keep){["scriptsSheet","settingsSheet","review"].forEach(i=>$(i).hidden=true);if(!keep)$("scrim").hidden=true}
 $("scrim").onclick=()=>{if(!$("review").hidden)return;closeSheets()};
 document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>closeSheets());
@@ -330,7 +369,7 @@ $("speedChip").onclick=()=>openSheet("settingsSheet");
 
 function renderList(){
   const L=$("scriptList");L.innerHTML="";
-  if(!scripts.length){L.innerHTML='<p class="note">No scripts yet. Paste one below, or tap Record in Content Machine to send one here.</p>';return}
+  if(!scripts.length){L.innerHTML='<p class="note">Scripts you pick or write show up here.</p>';return}
   for(const s of scripts){
     const words=s.beats.reduce((n,b)=>n+b.say.split(/\s+/).length,0);
     const row=document.createElement("div");row.className="item"+(s.id===curId?" sel":"");
@@ -363,10 +402,158 @@ $("countdown").onchange=e=>{S.countdown=e.target.checked;store.set("countdown",S
 window.addEventListener("resize",()=>{const r=maxY()?P.y/maxY():0;renderPrompter();P.y=r*maxY();applyY()});
 window.addEventListener("hashchange",()=>{if(importFromHash()){P.y=0;renderPrompter()}});
 
+/* ---------- Claude: writes the scripts ---------- */
+const SDK_URL="https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.130.0/+esm";
+const MODEL="claude-opus-5-5";
+const AI={running:false};
+const PLAYBOOK=`CREATOR: @umesh.emmadishetty, Telugu AI business coach (~8.4K followers). Programs: Digital Entrepreneur (hub.digitalentrepreneur.in).
+AUDIENCE: Telugu professionals and homemakers who want an online income with AI skills; many have a salary and no tech background.
+VOICE: direct, short lines said to camera at a desk with a bookshelf. "Stop X" openers work. No hype words.
+PUBLISHED PROOF (may be used): 300+ Telugu students earning Rs 20,000 to Rs 2 lakh per month; 1,000+ member community; live training in Telugu; programs start at Rs 999 with a referral code.
+MARKET FACTS (use these real values): ChatGPT Plus about Rs 1,999/month, Google AI Pro about Rs 1,950, Claude Pro about Rs 1,800, Canva Pro about Rs 500, so about Rs 6,000/month for all four. Free tools: ChatGPT free, Gemini free, Canva free, Meta AI (in WhatsApp/Instagram), Kling AI (free daily credits, photo to video), CapCut. Local rates in Telugu tier-2 towns: festival shop video or ad Rs 1,000 to 2,000; monthly Instagram posts for a local business Rs 3,000 to 8,000; WhatsApp catalogue or auto-reply setup Rs 2,000 to 5,000.
+PATTERNS THAT WIN: N = "Stop X" + comment keyword (creator's best: 10.8x and 3.5x usual views). A = show an AI result on screen, then what a business pays for it (peers 19-22x). B = ranked or numbered list for one named group (peers 13-542x). C = save money now, tied to a date (peers 5-23x). D = local Telugu identity: Hyderabad places, Telugu films. S = story.
+FLOPS: event recaps, news headlines, hiring posts, generic motivation.`;
+const SYSTEM=`You write Instagram Reel scripts for a Telugu AI business coach.
+${PLAYBOOK}
+
+RULES
+- LANGUAGE: "hook" and every "say" line are Tenglish: everyday spoken Telugu written in Roman letters, mixed with the English words Telugu speakers naturally use (AI, business, client, video, income, shop, numbers). Example: "Diwali inka 3 weeks lo undi. Mee area lo prathi shop ki oka video kavali. Chala mandi owners ki cheyyatam raadu. Meeru cheyyagalaru." Never Telugu script, never plain English sentences. "onScreen" and "screen" are short English caps (max 6 words). "shot" is a short English camera note.
+- REAL VALUES ONLY: never write placeholders, brackets or blanks. Use real tool names, the market facts and the published proof above. Never invent a personal story, a named student or a result the creator did not publish.
+- SHAPE: one idea per reel; hook under 12 words; each beat at most 11 spoken words; the frame changes every beat; mark a mid-line edit with "(cut)".
+- CTA (mandatory): the beat before the last says "<KEYWORD> ani comment cheyyandi" plus exactly what the viewer gets in DM (the prompt, a tools list, a free class link, skill advice). Its "screen" is COMMENT "<KEYWORD>". "cta" is that KEYWORD, one English caps word. The last beat is a short line echoing a word from the hook.
+- "why" is one English sentence saying why this should work, citing the pattern evidence.`;
+const BEAT={type:"object",properties:{say:{type:"string"},screen:{type:"string"},shot:{type:"string"}},required:["say","screen","shot"],additionalProperties:false};
+const IDEA={type:"object",properties:{hook:{type:"string"},onScreen:{type:"string"},pattern:{type:"string",enum:["A","B","C","D","N","S"]},why:{type:"string"},cta:{type:"string"},script:{type:"array",items:BEAT}},required:["hook","onScreen","pattern","why","cta","script"],additionalProperties:false};
+const SCHEMA={type:"object",properties:{ideas:{type:"array",items:IDEA}},required:["ideas"],additionalProperties:false};
+const PATTERN={A:"AI demo",B:"Ranked list",C:"Money-saving",D:"Local Telugu",N:"Stop X",S:"Story"};
+const todayKey=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const hasKey=()=>!!store.get("key","");
+function emptyText(){
+  if(!hasKey())return 'Add your Claude API key once (<b>Prompter → Claude API key</b>) and this app writes your scripts every day.';
+  return AI.running?"Writing today's scripts…":'Tap <b>&nbsp;Ideas&nbsp;</b> to pick today\'s script.';
+}
+function normErr(e){
+  if(e&&typeof e.code==="string"&&!e.status)return e;
+  const st=e&&e.status, msg=String(e&&e.message||"");
+  if(st===401)return {code:"bad_key"};
+  if(st===403)return {code:"forbidden"};
+  if(st===429)return {code:"rate"};
+  if(st===400&&/credit|billing|balance/i.test(msg))return {code:"no_credit"};
+  if(st===400)return {code:"bad_request",msg};
+  if(st===529||st>=500)return {code:"busy"};
+  return {code:"offline"};
+}
+function errText(c){
+  return ({no_key:"Add your Claude API key first (Prompter → Claude API key).",bad_key:"Claude didn't accept that API key. Check it under Prompter → Claude API key.",forbidden:"This API key isn't allowed to use Claude. Check the key's workspace in console.anthropic.com.",rate:"Too many requests or the usage limit was reached. Try again in a minute.",no_credit:"Your Claude API account is out of credit. Add credit at console.anthropic.com → Billing.",busy:"Claude is busy right now. Try again in a minute.",offline:"Couldn't reach Claude. Check your internet connection and try again.",refusal:"Claude couldn't write this one. Try describing the idea differently.",truncated:"The script came back cut off. Try again.",bad_json:"The script came back in the wrong shape. Try again.",bad_request:"Claude rejected the request. Try again."})[c]||"Something went wrong. Try again.";
+}
+async function ask(userText){
+  const key=store.get("key","");if(!key)throw {code:"no_key"};
+  let Anthropic;
+  try{const mod=await import(SDK_URL);Anthropic=mod.default||mod.Anthropic}catch{throw {code:"offline"}}
+  const client=new Anthropic({apiKey:key,dangerouslyAllowBrowser:true,maxRetries:1,timeout:180000});
+  let res;
+  try{
+    res=await client.beta.messages.create({
+      model:MODEL,max_tokens:16000,
+      betas:["server-side-fallback-2026-07-01"],fallbacks:"default",
+      thinking:{type:"adaptive"},
+      output_config:{effort:"medium",format:{type:"json_schema",schema:SCHEMA}},
+      system:SYSTEM,
+      messages:[{role:"user",content:userText}]
+    });
+  }catch(e){throw normErr(e)}
+  if(res.stop_reason==="refusal")throw {code:"refusal"};
+  if(res.stop_reason==="max_tokens")throw {code:"truncated"};
+  const txt=(res.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("");
+  let data;try{data=JSON.parse(txt)}catch{throw {code:"bad_json"}}
+  const ideas=(data&&Array.isArray(data.ideas)?data.ideas:[]).filter(i=>i&&typeof i.hook==="string"&&Array.isArray(i.script)&&i.script.length>2);
+  if(!ideas.length)throw {code:"bad_json"};
+  return ideas;
+}
+function recentHooks(){return store.get("hooks",[]).slice(0,40)}
+function rememberHooks(list){store.set("hooks",[...list.map(i=>i.hook),...recentHooks()].slice(0,40))}
+function useIdea(i){
+  const beats=i.script.map(b=>({say:String(b.say||""),cue:[b.screen&&"SCREEN: "+b.screen,b.shot&&"SHOT: "+b.shot].filter(Boolean).join(" · ")})).filter(b=>b.say);
+  addScript(String(i.hook).slice(0,140),beats,"ai",String(i.cta||""));
+  P.y=0;renderPrompter();
+}
+function pill(text,ready){const p=$("aiPill");if(!text){p.hidden=true;return}p.textContent=text;p.hidden=false;p.classList.toggle("ready",!!ready)}
+$("aiPill").onclick=()=>openSheet("scriptsSheet");
+function renderIdeas(){
+  const key=hasKey();
+  $("noKey").hidden=key;$("aiBox").hidden=!key;
+  if(!key)return;
+  const st=store.get("ideas",{date:"",items:[]});
+  const L=$("ideaList");L.innerHTML="";
+  const items=st.date===todayKey()?st.items:[];
+  if(!items.length&&!AI.running){L.innerHTML='<p class="note">No ideas for today yet.</p>'}
+  for(const i of items){
+    const b=document.createElement("button");b.className="idea";
+    b.innerHTML=`<span class="h">${esc(i.hook)}</span><span class="m">${esc(PATTERN[i.pattern]||i.pattern||"")} · ${i.script.length} lines · <b>CTA: comment ${esc(i.cta||"")}</b></span><span class="m">${esc(i.why||"")}</span>`;
+    b.onclick=()=>{useIdea(i);closeSheets()};
+    L.append(b);
+  }
+  $("newIdeasBtn").disabled=AI.running;$("writeBtn").disabled=AI.running;
+}
+function setStatus(t){$("aiStatus").textContent=t}
+async function generateDaily(force){
+  if(AI.running||!hasKey())return;
+  const st=store.get("ideas",{date:"",items:[]});
+  if(!force&&st.date===todayKey()&&st.items.length)return;
+  AI.running=true;setStatus("Writing 3 fresh scripts… about 30–60 seconds.");pill("✦ Writing today's scripts…");renderIdeas();if(!current())renderPrompter();
+  try{
+    const d=new Date();
+    const prompt=`Today is ${d.toDateString()}.
+Recent hooks, do not repeat or lightly reword:
+${recentHooks().map(h=>"- "+h).join("\n")||"(none)"}
+
+Write 3 new reel ideas of about 30 seconds each (10-12 beats), each a different pattern. At least one must be pattern A. If an Indian or Telugu festival or big shopping sale you are certain about falls within the next 3 weeks, build one idea around it.`;
+    const ideas=await ask(prompt);
+    const prev=st.date===todayKey()?st.items:[];
+    store.set("ideas",{date:todayKey(),items:[...ideas,...prev].slice(0,12)});
+    rememberHooks(ideas);
+    setStatus("");
+    if(!current())useIdea(ideas[0]);
+    pill("✦ "+ideas.length+" new scripts ready",true);
+  }catch(e){setStatus(errText(e.code));pill("✦ Couldn't write scripts. Tap for details")}
+  finally{AI.running=false;renderIdeas();renderPrompter()}
+}
+$("newIdeasBtn").onclick=()=>generateDaily(true);
+$("writeBtn").onclick=async()=>{
+  const raw=$("ideaBox").value.trim();
+  if(raw.length<10){setStatus("Write a sentence or two about your idea first.");$("ideaBox").focus();return}
+  if(AI.running)return;
+  const len=+$("lenSel").value||30, beats=len<=15?"6-7":len>=45?"15-17":"10-12";
+  AI.running=true;renderIdeas();setStatus("Writing your script… about 30 seconds.");
+  try{
+    const ideas=await ask(`Turn the creator's own idea below into ONE reel of about ${len} seconds (${beats} beats). Keep every name and number they give exactly; add only real values from the facts. Choose the pattern that fits best. Return it as the only item in "ideas".
+
+THE CREATOR'S IDEA:
+"""${raw.slice(0,3000)}"""`);
+    const st=store.get("ideas",{date:"",items:[]});
+    store.set("ideas",{date:todayKey(),items:[ideas[0],...(st.date===todayKey()?st.items:[])].slice(0,12)});
+    rememberHooks([ideas[0]]);
+    $("ideaBox").value="";setStatus("");
+    useIdea(ideas[0]);closeSheets();
+  }catch(e){setStatus(errText(e.code))}
+  finally{AI.running=false;renderIdeas()}
+};
+$("goKey").onclick=()=>{openSheet("settingsSheet");setTimeout(()=>$("keyInput").focus(),50)};
+$("saveKey").onclick=()=>{
+  const k=$("keyInput").value.trim();
+  if(!/^sk-ant-/.test(k)){$("keyStatus").textContent="That doesn't look like a Claude API key. It starts with sk-ant-.";return}
+  store.set("key",k);$("keyInput").value="";$("keyInput").placeholder="Saved on this phone ("+k.slice(0,10)+"…)";
+  $("keyStatus").textContent="Saved. Writing today's scripts now.";
+  renderPrompter();generateDaily(false);
+};
+$("clearKey").onclick=()=>{store.set("key","");$("keyInput").placeholder="sk-ant-…";$("keyStatus").textContent="Key removed from this phone.";renderIdeas();renderPrompter()};
+
 /* ---------- boot ---------- */
 importFromHash();
 if(!current()&&scripts[0])curId=scripts[0].id;
+if(hasKey())$("keyInput").placeholder="Saved on this phone ("+store.get("key","").slice(0,10)+"…)";
 updChip();renderPrompter();startCamera();
+generateDaily(false);
 if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
 })();
 </script>
