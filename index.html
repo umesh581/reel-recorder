@@ -282,7 +282,7 @@ async function startCamera(){
   if(!window.isSecureContext||!navigator.mediaDevices?.getUserMedia){showMsg("The camera only works when this app is opened from an <b>https://</b> address. Open it from its web link, not from a downloaded file.");return}
   if(stream)stream.getTracks().forEach(t=>t.stop());
   try{
-    stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},video:{facingMode:S.facing,width:{ideal:1080},height:{ideal:1920},frameRate:{ideal:30}}});
+    stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},video:{facingMode:S.facing,width:{ideal:1440},height:{ideal:1920},frameRate:{ideal:30}}});
     const v=$("cam");v.srcObject=stream;v.classList.toggle("mirror",S.facing==="user");await v.play().catch(()=>{});
   }catch(e){
     const n=e&&e.name;
@@ -295,8 +295,10 @@ $("flipBtn").onclick=()=>{if(recording())return;S.facing=S.facing==="user"?"envi
 
 /* ---------- recording ---------- */
 const recording=()=>recorder&&recorder.state==="recording";
-function pickType(){
-  const types=["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4;codecs=avc1","video/mp4","video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"];
+function pickType(hasAudio){
+  const types=hasAudio
+    ?["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4;codecs=avc1","video/mp4","video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"]
+    :["video/mp4;codecs=avc1","video/mp4","video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm"];
   for(const t of types){try{if(window.MediaRecorder&&MediaRecorder.isTypeSupported(t))return t}catch{}}
   return "";
 }
@@ -304,6 +306,35 @@ async function wake(on){try{if(on&&!wakeLock&&navigator.wakeLock){wakeLock=await
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&(P.playing||recording()))wake(true)});
 function countdown(){return new Promise(res=>{if(!S.countdown)return res();let n=3;const c=$("count");c.textContent=n;c.hidden=false;const t=setInterval(()=>{n--;if(n>0){c.textContent=n}else{clearInterval(t);c.hidden=true;res()}},800)})}
 const fmt=s=>Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0");
+/* Reels are 9:16. Phone cameras usually deliver 3:4 (or landscape) frames, so every frame is
+   centre-cropped onto a 1080x1920 canvas and the canvas is what gets recorded. */
+const OUT_W=1080, OUT_H=1920;
+const comp={canvas:null,ctx:null,on:false,track:null};
+function drawFrame(){
+  const v=$("cam"), vw=v.videoWidth, vh=v.videoHeight;
+  if(!vw||!vh)return;
+  const target=OUT_W/OUT_H;
+  let sx=0,sy=0,sw=vw,sh=vh;
+  if(vw/vh>target){sw=vh*target;sx=(vw-sw)/2}else{sh=vw/target;sy=(vh-sh)/2}
+  comp.ctx.drawImage(v,sx,sy,sw,sh,0,0,OUT_W,OUT_H);
+}
+function compLoop(){
+  if(!comp.on)return;
+  drawFrame();
+  const v=$("cam");
+  if(v.requestVideoFrameCallback)v.requestVideoFrameCallback(compLoop);else requestAnimationFrame(compLoop);
+}
+function reelStream(){
+  try{
+    if(!comp.canvas){comp.canvas=document.createElement("canvas");comp.canvas.width=OUT_W;comp.canvas.height=OUT_H;comp.ctx=comp.canvas.getContext("2d",{alpha:false})}
+    if(!comp.canvas.captureStream)return null;
+    comp.on=true;drawFrame();compLoop();
+    const vt=comp.canvas.captureStream(30).getVideoTracks()[0];
+    comp.track=vt;
+    return new MediaStream([vt,...stream.getAudioTracks()]);
+  }catch{comp.on=false;return null}
+}
+function stopComp(){comp.on=false;try{comp.track&&comp.track.stop()}catch{}comp.track=null}
 async function startRec(){
   if(!stream){await startCamera();if(!stream)return}
   if(!window.MediaRecorder){showMsg("This browser can't record video. On iPhone use Safari; on Android use Chrome.");return}
@@ -311,10 +342,12 @@ async function startRec(){
   $("rec").disabled=true;
   await countdown();
   $("rec").disabled=false;
-  const type=pickType();
+  const type=pickType(stream.getAudioTracks().length>0);
   chunks=[];
-  try{recorder=new MediaRecorder(stream,Object.assign({videoBitsPerSecond:8000000},type?{mimeType:type}:{}))}
-  catch{recorder=new MediaRecorder(stream)}
+  const recStream=reelStream()||stream;
+  window.__cropped=recStream!==stream;
+  try{recorder=new MediaRecorder(recStream,Object.assign({videoBitsPerSecond:10000000},type?{mimeType:type}:{}))}
+  catch{recorder=new MediaRecorder(recStream)}
   recorder.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
   recorder.onstop=finishRec;
   recorder.start(1000);
@@ -327,7 +360,7 @@ async function startRec(){
 }
 function stopRec(){if(recording())recorder.stop()}
 function finishRec(){
-  clearInterval(timerT);stopScroll();wake(false);
+  clearInterval(timerT);stopScroll();wake(false);stopComp();
   $("rec").classList.remove("on");$("rec").setAttribute("aria-label","Record");$("timer").hidden=true;
   document.querySelectorAll("#scriptsBtn,#settingsBtn,#flipBtn,#rehearseBtn").forEach(b=>b.disabled=false);
   const type=(recorder.mimeType||chunks[0]?.type||"video/mp4").split(";")[0];
@@ -339,7 +372,7 @@ function finishRec(){
   if(take?.url)URL.revokeObjectURL(take.url);
   take={blob,url:URL.createObjectURL(blob),name:`${slug}-${stamp}.${ext}`,ext,secs:(performance.now()-recStart)/1000};
   $("takeVideo").src=take.url;
-  $("takeInfo").textContent=fmt(take.secs)+" · "+(blob.size/1048576).toFixed(1)+" MB · "+ext.toUpperCase();
+  $("takeInfo").textContent=fmt(take.secs)+" · "+(window.__cropped?"1080×1920 (9:16) · ":"")+(blob.size/1048576).toFixed(1)+" MB · "+ext.toUpperCase();
   $("saveNote").innerHTML=ext==="webm"
     ?"This phone recorded WebM. Instagram may not accept it; update Chrome, or convert it before posting."
     :(/iPhone|iPad/.test(navigator.userAgent)?"In the share sheet, choose <b>Save Video</b> to put it in Photos.":"In the share sheet, pick Photos/Gallery or Files. If no sheet appears, it saves to Downloads.");
