@@ -89,7 +89,12 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 #aiPill{position:absolute;left:10px;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:3;max-width:60%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #aiPill.ready{background:var(--accent);color:#1B1300;border-color:var(--accent)}
 .sub{margin:6px 0 0;font-size:14px;color:var(--dim);font-weight:600;letter-spacing:.02em}
-.idea{display:flex;flex-direction:column;gap:4px;border:1px solid var(--line);border-radius:12px;padding:12px;text-align:left;width:100%}
+.idea{display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-radius:12px;padding:12px;text-align:left;width:100%}
+.idea-pick{display:flex;flex-direction:column;gap:4px;text-align:left;width:100%}
+.idea-acts{display:flex;gap:8px}
+.mini{font-size:12.5px;font-weight:600;border:1px solid var(--line);border-radius:8px;padding:6px 10px;color:var(--dim)}
+.mini.ok{color:#5FD39A;border-color:#2F6B4F}
+.mini[data-armed]{color:#FF8A8A;border-color:#FF8A8A}
 .idea .h{font-weight:700;font-size:15px;line-height:1.35}
 .idea .m{font-size:12px;color:var(--dim)}
 .idea .m b{color:var(--accent);font-weight:600}
@@ -383,6 +388,7 @@ $("rehearseBtn").onclick=()=>P.playing?stopScroll():startScroll();
 
 $("saveTake").onclick=async()=>{
   if(!take)return;
+  const cs=current();if(cs)markDone(cs.title,"recorded");
   const file=new File([take.blob],take.name,{type:take.blob.type});
   try{
     if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:take.name});return}
@@ -453,7 +459,7 @@ RULES
 - LANGUAGE: "hook" and every "say" line are Tenglish: everyday spoken Telugu in Roman letters mixed with natural English tech words (AI, model, launch, free, agent, update). Example: "GPT-6 ippudu free. ChatGPT text lo answer cheyyadam aapesindi." Never Telugu script, never plain English sentences. "onScreen" and "screen" are short English caps (max 6 words). "shot" is a short English note describing the real screen or camera shot.
 - REAL VALUES ONLY: no placeholders, brackets or blanks. News claims must come from your web search results: name the company, product and date. Say "reports prakaram" for reported but unconfirmed claims. Never invent a launch, number, quote, personal story or student result.
 - SHAPE: one idea per reel, 25-40 seconds; hook under 12 words naming the company/model or a surprising fact; each beat at most 11 spoken words; the frame changes every beat; mark a mid-line edit with "(cut)".
-- CTA (mandatory): the beat before the last says "<KEYWORD> ani comment cheyyandi" plus what the viewer gets in DM (prompt list, comparison sheet, weekly AI briefing, tool link, full business blueprint + pricing sheet). Its "screen" is COMMENT "<KEYWORD>". "cta" is that KEYWORD, one English caps word. The last beat is a short line echoing a word from the hook.
+- CTA (identical in every reel): the beat before the last says exactly "AI ani comment cheyyandi. Full details DM lo pampistanu." Its "screen" is COMMENT "AI" and "cta" is "AI". The last beat is a short line echoing a word from the hook.
 - "why" is one English sentence: the benchmark format it copies and the news date.
 
 OUTPUT: after any searching, reply with ONLY a JSON object, no other text:
@@ -518,6 +524,9 @@ async function ask(userText,useWeb){
   return parseIdeas(txt);
 }
 function recentHooks(){return store.get("hooks",[]).slice(0,40)}
+function doneHooks(){return store.get("done",[])}
+function markDone(hook,why){if(!hook)return;const d=doneHooks().filter(x=>x.h!==hook);d.unshift({h:String(hook),w:why});store.set("done",d.slice(0,150))}
+const isDone=h=>doneHooks().some(x=>x.h===h);
 function rememberHooks(list){store.set("hooks",[...list.map(i=>i.hook),...recentHooks()].slice(0,40))}
 function useIdea(i){
   const beats=i.script.map(b=>({say:String(b.say||""),cue:[b.screen&&"SCREEN: "+b.screen,b.shot&&"SHOT: "+b.shot].filter(Boolean).join(" · ")})).filter(b=>b.say);
@@ -532,13 +541,19 @@ function renderIdeas(){
   if(!key)return;
   const st=store.get("ideas",{date:"",items:[]});
   const L=$("ideaList");L.innerHTML="";
-  const items=st.date===todayKey()?st.items:[];
-  if(!items.length&&!AI.running){L.innerHTML='<p class="note">No ideas for today yet.</p>'}
+  const items=(st.date===todayKey()?st.items:[]).filter(i=>!isDone(i.hook));
+  if(!items.length&&!AI.running){L.innerHTML='<p class="note">No fresh ideas right now. Tap <b>Write 3 new ideas</b>.</p>'}
   for(const i of items){
-    const b=document.createElement("button");b.className="idea";
-    b.innerHTML=`<span class="h">${esc(i.hook)}</span><span class="m">${esc(PATTERN[i.pattern]||i.pattern||"")} · ${i.script.length} lines · <b>CTA: comment ${esc(i.cta||"")}</b></span><span class="m">${esc(i.why||"")}</span>`;
+    const wrap=document.createElement("div");wrap.className="idea";
+    const b=document.createElement("button");b.className="idea-pick";
+    b.innerHTML=`<span class="h">${esc(i.hook)}</span><span class="m">${esc(PATTERN[i.pattern]||i.pattern||"")} · ${i.script.length} lines · <b>CTA: comment AI</b></span><span class="m">${esc(i.why||"")}</span>`;
     b.onclick=()=>{useIdea(i);closeSheets()};
-    L.append(b);
+    const acts=document.createElement("div");acts.className="idea-acts";
+    const rec=document.createElement("button");rec.className="mini ok";rec.textContent="✓ Recorded";
+    rec.onclick=()=>{markDone(i.hook,"recorded");renderIdeas()};
+    const del=document.createElement("button");del.className="mini";del.textContent="Delete";
+    del.onclick=()=>{if(!del.dataset.armed){del.dataset.armed="1";del.textContent="Tap again";setTimeout(()=>{if(del.isConnected){delete del.dataset.armed;del.textContent="Delete"}},2500);return}markDone(i.hook,"deleted");renderIdeas()};
+    acts.append(rec,del);wrap.append(b,acts);L.append(wrap);
   }
   $("newIdeasBtn").disabled=AI.running;$("writeBtn").disabled=AI.running;
 }
@@ -553,6 +568,9 @@ async function generateDaily(force){
     const prompt=`Today is ${d.toDateString()}.
 Recent hooks, do not repeat or cover the same news again:
 ${recentHooks().map(h=>"- "+h).join("\n")||"(none)"}
+
+Hooks the creator deleted (disliked); never repeat or resemble these:
+${doneHooks().filter(x=>x.w==="deleted").slice(0,30).map(x=>"- "+x.h).join("\n")||"(none)"}
 
 First use web search (3-5 searches) to find the biggest AI launches and updates of the last 3-4 days (OpenAI, Google, Anthropic, Meta, xAI, Microsoft, Apple, Perplexity, Indian AI companies), free features people can try today, and AI stories or policy from India (especially Hyderabad, Telangana, Andhra Pradesh, Bengaluru).
 Then write 3 reel ideas of about 30 seconds (10-12 beats): one pattern E on the single biggest launch, one pattern B (a Rs 1 lakh+/month AI business blueprint, ideally built on a tool from this week's news), and one of R, L, H, T or N. News facts only from your search results.`;
