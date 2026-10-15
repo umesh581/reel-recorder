@@ -410,8 +410,9 @@ const PLAYBOOK=`CREATOR: @umesh.emmadishetty, the Telugu-first AI insider (~8.4K
 AUDIENCE: ambitious Telugu working professionals, founders, business owners and students who want to stay ahead with AI. Aspirational and career-minded. NOT people looking for small side income.
 VOICE: fast, confident, insider. Hands-on: shows the tool on screen, tests it, gives a verdict. Short lines to camera, quick cuts. No hype words.
 BENCHMARK: @vaibhavsisinty (2M followers, typical reel ~360K views). His top recent formats: Meta glasses translating English to Hindi live (5.9M, 16x); "What is Google's Gemini 4 Argon" explainer (858K); Bengaluru AI traffic camera fined a guitar (683K); "9 AI updates you missed this week" (537K); "Your Tesla is now an AI agent"; "AI just fixed your home WiFi". Copy formats, never scripts.
-PATTERNS: E = same-week big launch explainer ("<Company> just dropped <X>" / "What is <X>"), live test on screen, verdict. R = weekly roundup ("Ee week miss ayina N AI updates"), last item India. L = India/Telugu AI story (Hyderabad, Telangana, AP, Bengaluru) or a launch that now works in Telugu/Hindi. H = "AI just did <everyday thing>" (cars, phones, WiFi, money, shopping). T = free power tool professionals don't know yet, quick demo. N = "Stop X" contrarian take for professionals.
-FLOPS (never): small side-hustle money (Rs 1,000-2,000 gigs), "earn from home", generic motivation, event recaps without news, hiring posts.`;
+PATTERNS: E = same-week big launch explainer ("<Company> just dropped <X>" / "What is <X>"), live test on screen, verdict. R = weekly roundup ("Ee week miss ayina N AI updates"), last item India. L = India/Telugu AI story (Hyderabad, Telangana, AP, Bengaluru) or a launch that now works in Telugu/Hindi. H = "AI just did <everyday thing>" (cars, phones, WiFi, money, shopping). T = free power tool professionals don't know yet, quick demo. N = "Stop X" contrarian take for professionals. B = Rs 1 lakh+/month AI business blueprint: one premium B2B AI business (agency, productized service, niche SaaS) for clients who already spend money (real estate builders, clinics, D2C brands, coaching institutes, CA/law firms, schools, manufacturers): their expensive problem, the AI solution with real tools (Vapi, Retell AI, Sarvam AI, n8n, Make, ChatGPT, Claude, Kling AI, ElevenLabs, CapCut, WATI, Interakt), setup + monthly pricing, the on-screen maths to Rs 1L+/month with 3-8 clients, and how to land client #1. Recurring revenue only, never gigs under Rs 10,000 per client, never guarantees.
+TYPICAL INDIAN PRICING (estimates, say "sumaru"): AI calling agent for real estate/clinics Rs 15-40K/month + Rs 20-50K setup; WhatsApp AI sales agent Rs 50K-1.5L setup + Rs 10-25K/month; AI ad creative studio for D2C Rs 30-80K/month retainer; AI automation for SMBs Rs 30K-1.5L per project + Rs 10-20K/month; corporate AI training Rs 50K-2L per day; niche AI SaaS Rs 2-5K per seat/month.
+FLOPS (never): small side-hustle money (Rs 200-2,000 gigs, "go to a shopkeeper and make a reel"), "earn from home", generic motivation, event recaps without news, hiring posts.`;
 const SYSTEM=`You write Instagram Reel scripts for a Telugu-first AI insider creator.
 ${PLAYBOOK}
 
@@ -419,12 +420,12 @@ RULES
 - LANGUAGE: "hook" and every "say" line are Tenglish: everyday spoken Telugu in Roman letters mixed with natural English tech words (AI, model, launch, free, agent, update). Example: "GPT-6 ippudu free. ChatGPT text lo answer cheyyadam aapesindi." Never Telugu script, never plain English sentences. "onScreen" and "screen" are short English caps (max 6 words). "shot" is a short English note describing the real screen or camera shot.
 - REAL VALUES ONLY: no placeholders, brackets or blanks. News claims must come from your web search results: name the company, product and date. Say "reports prakaram" for reported but unconfirmed claims. Never invent a launch, number, quote, personal story or student result.
 - SHAPE: one idea per reel, 25-40 seconds; hook under 12 words naming the company/model or a surprising fact; each beat at most 11 spoken words; the frame changes every beat; mark a mid-line edit with "(cut)".
-- CTA (mandatory): the beat before the last says "<KEYWORD> ani comment cheyyandi" plus what the viewer gets in DM (prompt list, comparison sheet, weekly AI briefing, tool link). Its "screen" is COMMENT "<KEYWORD>". "cta" is that KEYWORD, one English caps word. The last beat is a short line echoing a word from the hook.
+- CTA (mandatory): the beat before the last says "<KEYWORD> ani comment cheyyandi" plus what the viewer gets in DM (prompt list, comparison sheet, weekly AI briefing, tool link, full business blueprint + pricing sheet). Its "screen" is COMMENT "<KEYWORD>". "cta" is that KEYWORD, one English caps word. The last beat is a short line echoing a word from the hook.
 - "why" is one English sentence: the benchmark format it copies and the news date.
 
 OUTPUT: after any searching, reply with ONLY a JSON object, no other text:
-{"ideas":[{"hook":string,"onScreen":string,"pattern":"E"|"R"|"L"|"H"|"T"|"N","timely":string,"why":string,"cta":string,"script":[{"say":string,"screen":string,"shot":string}]}]}`;
-const PATTERN={E:"Launch explainer",R:"Weekly roundup",L:"India / Telugu",H:"AI in daily life",T:"Free power tool",N:"Stop X take",A:"AI demo",B:"Ranked list",C:"Money-saving",D:"Local Telugu",S:"Story"};
+{"ideas":[{"hook":string,"onScreen":string,"pattern":"E"|"B"|"R"|"L"|"H"|"T"|"N","timely":string,"why":string,"cta":string,"script":[{"say":string,"screen":string,"shot":string}]}]}`;
+const PATTERN={E:"Launch explainer",R:"Weekly roundup",L:"India / Telugu",H:"AI in daily life",T:"Free power tool",N:"Stop X take",A:"AI demo",B:"₹1L business",C:"Money-saving",D:"Local Telugu",S:"Story"};
 const todayKey=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
 const hasKey=()=>!!store.get("key","");
 function emptyText(){
@@ -521,7 +522,7 @@ Recent hooks, do not repeat or cover the same news again:
 ${recentHooks().map(h=>"- "+h).join("\n")||"(none)"}
 
 First use web search (3-5 searches) to find the biggest AI launches and updates of the last 3-4 days (OpenAI, Google, Anthropic, Meta, xAI, Microsoft, Apple, Perplexity, Indian AI companies), free features people can try today, and AI stories or policy from India (especially Hyderabad, Telangana, Andhra Pradesh, Bengaluru).
-Then write 3 reel ideas of about 30 seconds (10-12 beats): one pattern E on the single biggest launch, one pattern R or L, and one of H, T or N. Use only facts from your search results.`;
+Then write 3 reel ideas of about 30 seconds (10-12 beats): one pattern E on the single biggest launch, one pattern B (a Rs 1 lakh+/month AI business blueprint, ideally built on a tool from this week's news), and one of R, L, H, T or N. News facts only from your search results.`;
     const ideas=await ask(prompt,true);
     const prev=st.date===todayKey()?st.items:[];
     store.set("ideas",{date:todayKey(),items:[...ideas,...prev].slice(0,12)});
