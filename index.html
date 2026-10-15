@@ -406,26 +406,25 @@ window.addEventListener("hashchange",()=>{if(importFromHash()){P.y=0;renderPromp
 const SDK_URL="https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.130.0/+esm";
 const MODEL="claude-opus-5-5";
 const AI={running:false};
-const PLAYBOOK=`CREATOR: @umesh.emmadishetty, Telugu AI business coach (~8.4K followers). Programs: Digital Entrepreneur (hub.digitalentrepreneur.in).
-AUDIENCE: Telugu professionals and homemakers who want an online income with AI skills; many have a salary and no tech background.
-VOICE: direct, short lines said to camera at a desk with a bookshelf. "Stop X" openers work. No hype words.
-PUBLISHED PROOF (may be used): 300+ Telugu students earning Rs 20,000 to Rs 2 lakh per month; 1,000+ member community; live training in Telugu; programs start at Rs 999 with a referral code.
-MARKET FACTS (use these real values): ChatGPT Plus about Rs 1,999/month, Google AI Pro about Rs 1,950, Claude Pro about Rs 1,800, Canva Pro about Rs 500, so about Rs 6,000/month for all four. Free tools: ChatGPT free, Gemini free, Canva free, Meta AI (in WhatsApp/Instagram), Kling AI (free daily credits, photo to video), CapCut. Local rates in Telugu tier-2 towns: festival shop video or ad Rs 1,000 to 2,000; monthly Instagram posts for a local business Rs 3,000 to 8,000; WhatsApp catalogue or auto-reply setup Rs 2,000 to 5,000.
-PATTERNS THAT WIN: N = "Stop X" + comment keyword (creator's best: 10.8x and 3.5x usual views). A = show an AI result on screen, then what a business pays for it (peers 19-22x). B = ranked or numbered list for one named group (peers 13-542x). C = save money now, tied to a date (peers 5-23x). D = local Telugu identity: Hyderabad places, Telugu films. S = story.
-FLOPS: event recaps, news headlines, hiring posts, generic motivation.`;
-const SYSTEM=`You write Instagram Reel scripts for a Telugu AI business coach.
+const PLAYBOOK=`CREATOR: @umesh.emmadishetty, the Telugu-first AI insider (~8.4K followers). "Ee week AI lo em jarigindo, mee language lo, mundu nene cheptanu."
+AUDIENCE: ambitious Telugu working professionals, founders, business owners and students who want to stay ahead with AI. Aspirational and career-minded. NOT people looking for small side income.
+VOICE: fast, confident, insider. Hands-on: shows the tool on screen, tests it, gives a verdict. Short lines to camera, quick cuts. No hype words.
+BENCHMARK: @vaibhavsisinty (2M followers, typical reel ~360K views). His top recent formats: Meta glasses translating English to Hindi live (5.9M, 16x); "What is Google's Gemini 4 Argon" explainer (858K); Bengaluru AI traffic camera fined a guitar (683K); "9 AI updates you missed this week" (537K); "Your Tesla is now an AI agent"; "AI just fixed your home WiFi". Copy formats, never scripts.
+PATTERNS: E = same-week big launch explainer ("<Company> just dropped <X>" / "What is <X>"), live test on screen, verdict. R = weekly roundup ("Ee week miss ayina N AI updates"), last item India. L = India/Telugu AI story (Hyderabad, Telangana, AP, Bengaluru) or a launch that now works in Telugu/Hindi. H = "AI just did <everyday thing>" (cars, phones, WiFi, money, shopping). T = free power tool professionals don't know yet, quick demo. N = "Stop X" contrarian take for professionals.
+FLOPS (never): small side-hustle money (Rs 1,000-2,000 gigs), "earn from home", generic motivation, event recaps without news, hiring posts.`;
+const SYSTEM=`You write Instagram Reel scripts for a Telugu-first AI insider creator.
 ${PLAYBOOK}
 
 RULES
-- LANGUAGE: "hook" and every "say" line are Tenglish: everyday spoken Telugu written in Roman letters, mixed with the English words Telugu speakers naturally use (AI, business, client, video, income, shop, numbers). Example: "Diwali inka 3 weeks lo undi. Mee area lo prathi shop ki oka video kavali. Chala mandi owners ki cheyyatam raadu. Meeru cheyyagalaru." Never Telugu script, never plain English sentences. "onScreen" and "screen" are short English caps (max 6 words). "shot" is a short English camera note.
-- REAL VALUES ONLY: never write placeholders, brackets or blanks. Use real tool names, the market facts and the published proof above. Never invent a personal story, a named student or a result the creator did not publish.
-- SHAPE: one idea per reel; hook under 12 words; each beat at most 11 spoken words; the frame changes every beat; mark a mid-line edit with "(cut)".
-- CTA (mandatory): the beat before the last says "<KEYWORD> ani comment cheyyandi" plus exactly what the viewer gets in DM (the prompt, a tools list, a free class link, skill advice). Its "screen" is COMMENT "<KEYWORD>". "cta" is that KEYWORD, one English caps word. The last beat is a short line echoing a word from the hook.
-- "why" is one English sentence saying why this should work, citing the pattern evidence.`;
-const BEAT={type:"object",properties:{say:{type:"string"},screen:{type:"string"},shot:{type:"string"}},required:["say","screen","shot"],additionalProperties:false};
-const IDEA={type:"object",properties:{hook:{type:"string"},onScreen:{type:"string"},pattern:{type:"string",enum:["A","B","C","D","N","S"]},why:{type:"string"},cta:{type:"string"},script:{type:"array",items:BEAT}},required:["hook","onScreen","pattern","why","cta","script"],additionalProperties:false};
-const SCHEMA={type:"object",properties:{ideas:{type:"array",items:IDEA}},required:["ideas"],additionalProperties:false};
-const PATTERN={A:"AI demo",B:"Ranked list",C:"Money-saving",D:"Local Telugu",N:"Stop X",S:"Story"};
+- LANGUAGE: "hook" and every "say" line are Tenglish: everyday spoken Telugu in Roman letters mixed with natural English tech words (AI, model, launch, free, agent, update). Example: "GPT-6 ippudu free. ChatGPT text lo answer cheyyadam aapesindi." Never Telugu script, never plain English sentences. "onScreen" and "screen" are short English caps (max 6 words). "shot" is a short English note describing the real screen or camera shot.
+- REAL VALUES ONLY: no placeholders, brackets or blanks. News claims must come from your web search results: name the company, product and date. Say "reports prakaram" for reported but unconfirmed claims. Never invent a launch, number, quote, personal story or student result.
+- SHAPE: one idea per reel, 25-40 seconds; hook under 12 words naming the company/model or a surprising fact; each beat at most 11 spoken words; the frame changes every beat; mark a mid-line edit with "(cut)".
+- CTA (mandatory): the beat before the last says "<KEYWORD> ani comment cheyyandi" plus what the viewer gets in DM (prompt list, comparison sheet, weekly AI briefing, tool link). Its "screen" is COMMENT "<KEYWORD>". "cta" is that KEYWORD, one English caps word. The last beat is a short line echoing a word from the hook.
+- "why" is one English sentence: the benchmark format it copies and the news date.
+
+OUTPUT: after any searching, reply with ONLY a JSON object, no other text:
+{"ideas":[{"hook":string,"onScreen":string,"pattern":"E"|"R"|"L"|"H"|"T"|"N","timely":string,"why":string,"cta":string,"script":[{"say":string,"screen":string,"shot":string}]}]}`;
+const PATTERN={E:"Launch explainer",R:"Weekly roundup",L:"India / Telugu",H:"AI in daily life",T:"Free power tool",N:"Stop X take",A:"AI demo",B:"Ranked list",C:"Money-saving",D:"Local Telugu",S:"Story"};
 const todayKey=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
 const hasKey=()=>!!store.get("key","");
 function emptyText(){
@@ -446,29 +445,43 @@ function normErr(e){
 function errText(c){
   return ({no_key:"Add your Claude API key first (Prompter → Claude API key).",bad_key:"Claude didn't accept that API key. Check it under Prompter → Claude API key.",forbidden:"This API key isn't allowed to use Claude. Check the key's workspace in console.anthropic.com.",rate:"Too many requests or the usage limit was reached. Try again in a minute.",no_credit:"Your Claude API account is out of credit. Add credit at console.anthropic.com → Billing.",busy:"Claude is busy right now. Try again in a minute.",offline:"Couldn't reach Claude. Check your internet connection and try again.",refusal:"Claude couldn't write this one. Try describing the idea differently.",truncated:"The script came back cut off. Try again.",bad_json:"The script came back in the wrong shape. Try again.",bad_request:"Claude rejected the request. Try again."})[c]||"Something went wrong. Try again.";
 }
-async function ask(userText){
-  const key=store.get("key","");if(!key)throw {code:"no_key"};
-  let Anthropic;
-  try{const mod=await import(SDK_URL);Anthropic=mod.default||mod.Anthropic}catch{throw {code:"offline"}}
-  const client=new Anthropic({apiKey:key,dangerouslyAllowBrowser:true,maxRetries:1,timeout:180000});
-  let res;
-  try{
-    res=await client.beta.messages.create({
-      model:MODEL,max_tokens:16000,
-      betas:["server-side-fallback-2026-07-01"],fallbacks:"default",
-      thinking:{type:"adaptive"},
-      output_config:{effort:"medium",format:{type:"json_schema",schema:SCHEMA}},
-      system:SYSTEM,
-      messages:[{role:"user",content:userText}]
-    });
-  }catch(e){throw normErr(e)}
-  if(res.stop_reason==="refusal")throw {code:"refusal"};
-  if(res.stop_reason==="max_tokens")throw {code:"truncated"};
-  const txt=(res.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("");
-  let data;try{data=JSON.parse(txt)}catch{throw {code:"bad_json"}}
+function parseIdeas(txt){
+  let data=null;
+  try{data=JSON.parse(txt)}catch{
+    const fence=txt.match(/```(?:json)?\s*([\s\S]*?)```/);
+    const body=fence?fence[1]:txt.slice(txt.indexOf("{"),txt.lastIndexOf("}")+1);
+    try{data=JSON.parse(body)}catch{data=null}
+  }
   const ideas=(data&&Array.isArray(data.ideas)?data.ideas:[]).filter(i=>i&&typeof i.hook==="string"&&Array.isArray(i.script)&&i.script.length>2);
   if(!ideas.length)throw {code:"bad_json"};
   return ideas;
+}
+async function ask(userText,useWeb){
+  const key=store.get("key","");if(!key)throw {code:"no_key"};
+  let Anthropic;
+  try{const mod=await import(SDK_URL);Anthropic=mod.default||mod.Anthropic}catch{throw {code:"offline"}}
+  const client=new Anthropic({apiKey:key,dangerouslyAllowBrowser:true,maxRetries:1,timeout:300000});
+  const messages=[{role:"user",content:userText}];
+  let res;
+  for(let round=0;round<4;round++){
+    try{
+      res=await client.beta.messages.create({
+        model:MODEL,max_tokens:16000,
+        betas:["server-side-fallback-2026-07-01"],fallbacks:"default",
+        thinking:{type:"adaptive"},
+        output_config:{effort:"medium"},
+        system:SYSTEM,
+        tools:useWeb?[{type:"web_search_20260209",name:"web_search",max_uses:6}]:undefined,
+        messages
+      });
+    }catch(e){throw normErr(e)}
+    if(res.stop_reason!=="pause_turn")break;
+    messages.push({role:"assistant",content:res.content});
+  }
+  if(res.stop_reason==="refusal")throw {code:"refusal"};
+  if(res.stop_reason==="max_tokens")throw {code:"truncated"};
+  const txt=(res.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("");
+  return parseIdeas(txt);
 }
 function recentHooks(){return store.get("hooks",[]).slice(0,40)}
 function rememberHooks(list){store.set("hooks",[...list.map(i=>i.hook),...recentHooks()].slice(0,40))}
@@ -500,15 +513,16 @@ async function generateDaily(force){
   if(AI.running||!hasKey())return;
   const st=store.get("ideas",{date:"",items:[]});
   if(!force&&st.date===todayKey()&&st.items.length)return;
-  AI.running=true;setStatus("Writing 3 fresh scripts… about 30–60 seconds.");pill("✦ Writing today's scripts…");renderIdeas();if(!current())renderPrompter();
+  AI.running=true;setStatus("Checking this week's AI news and writing 3 scripts… about 1–2 minutes.");pill("✦ Writing today's scripts…");renderIdeas();if(!current())renderPrompter();
   try{
     const d=new Date();
     const prompt=`Today is ${d.toDateString()}.
-Recent hooks, do not repeat or lightly reword:
+Recent hooks, do not repeat or cover the same news again:
 ${recentHooks().map(h=>"- "+h).join("\n")||"(none)"}
 
-Write 3 new reel ideas of about 30 seconds each (10-12 beats), each a different pattern. At least one must be pattern A. If an Indian or Telugu festival or big shopping sale you are certain about falls within the next 3 weeks, build one idea around it.`;
-    const ideas=await ask(prompt);
+First use web search (3-5 searches) to find the biggest AI launches and updates of the last 3-4 days (OpenAI, Google, Anthropic, Meta, xAI, Microsoft, Apple, Perplexity, Indian AI companies), free features people can try today, and AI stories or policy from India (especially Hyderabad, Telangana, Andhra Pradesh, Bengaluru).
+Then write 3 reel ideas of about 30 seconds (10-12 beats): one pattern E on the single biggest launch, one pattern R or L, and one of H, T or N. Use only facts from your search results.`;
+    const ideas=await ask(prompt,true);
     const prev=st.date===todayKey()?st.items:[];
     store.set("ideas",{date:todayKey(),items:[...ideas,...prev].slice(0,12)});
     rememberHooks(ideas);
